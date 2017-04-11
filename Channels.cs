@@ -14,7 +14,7 @@ namespace Channels
 {
     public class Main : RocketPlugin
     {
-
+        int Times;
         public List<ChannelPlayer> Channels = new List<ChannelPlayer>();
         protected override void Load()
         {
@@ -32,6 +32,7 @@ namespace Channels
                 {
                     {"globalchat", "You don't have global chat permission!"},
                     {"chat_switch", "You're now chatting in {0}."},
+                    {"no_permission", "You don't have permission to chat here!" }
                 };
             }
         }
@@ -55,10 +56,6 @@ namespace Channels
         private void UnturnedPlayerEvents_OnPlayerChatted(Rocket.Unturned.Player.UnturnedPlayer player, ref UnityEngine.Color color, string message, SDG.Unturned.EChatMode chatMode, ref bool cancel)
         {
             var result = GetChannel(player.CSteamID);
-            if (result.Channel == "" || result.Channel == null)
-            {
-                Channels.Add(new ChannelPlayer(player.CSteamID, "general"));
-            }
             if(result != null && chatMode == 0 && player.HasPermission("channel." + result.Channel.ToLower()) && result.Channel.ToLower() != "global" && !message.StartsWith("/") && !message.StartsWith("@"))
             {
                 cancel = true;
@@ -68,6 +65,7 @@ namespace Channels
                     if (stm.HasPermission("channel." + result.Channel.ToLower()))
                     {
                         UnturnedChat.Say(steamplayer.playerID.steamID, "[" + result.Channel + "] " + player.CharacterName + " : " + message);
+                        Times = 1;
                     }
                 }
             }
@@ -76,8 +74,14 @@ namespace Channels
                 if (player.HasPermission("chat.global"))
                 {
                     ChatManager.instance.askChat(player.CSteamID, 0, message);
+                    Times = 1;
                 }
             }
+            if(Times == 0)
+            {
+                UnturnedChat.Say(player, Translate("no_permission"));
+            }
+
         }
 
         public ChannelPlayer GetChannel(CSteamID id)
@@ -89,7 +93,7 @@ namespace Channels
                     return channel;
                 }
             }
-            return null;
+            return new ChannelPlayer(id, "global");
         }
     }
     public class ChannelPlayer
